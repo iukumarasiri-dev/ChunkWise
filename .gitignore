@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Backend storage (uploaded files + vector DB + sqlite)
+backend/storage/uploads/*
+!backend/storage/uploads/.gitkeep
+backend/storage/chroma/*
+!backend/storage/chroma/.gitkeep
+backend/storage/*.sqlite3
+backend/storage/*.db
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
