@@ -30,7 +30,7 @@ of trusting it blindly.
 - sentence-transformers (embeddings)
 - pdfplumber / python-docx (document parsing)
 - SQLite (document metadata and status tracking)
-- Pluggable LLM provider (interface defined; concrete provider chosen later)
+- Ollama (answer generation — local or cloud), behind a pluggable provider interface
 
 **Frontend**
 
@@ -64,15 +64,56 @@ ChunkWise/
 
 ## Getting started
 
-### Backend
+### 1. Backend
 
 ```bash
 cd backend
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+cp .env.example .env               # Windows: copy .env.example .env
 uvicorn app.main:app --reload
 ```
 
-### Frontend
+The first document upload downloads the embedding model (~80 MB, one time).
+
+Out of the box `LLM_PROVIDER=stub` in `.env` — answers just echo the top
+retrieved passage, so the app runs with no LLM setup. For real synthesized
+answers, configure Ollama (step 2).
+
+### 2. LLM (optional — for synthesized answers)
+
+Answer generation runs through [Ollama](https://ollama.com), either a local
+server or Ollama Cloud.
+
+**Local** — install Ollama from <https://ollama.com/download>, then:
+
+```bash
+ollama pull llama3.2:3b
+```
+
+and in `backend/.env`:
+
+```
+LLM_PROVIDER=ollama
+LLM_MODEL=llama3.2:3b
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_API_KEY=
+```
+
+**Ollama Cloud** — no local model; create a key at
+<https://ollama.com/settings/keys>, then in `backend/.env`:
+
+```
+LLM_PROVIDER=ollama
+LLM_MODEL=gpt-oss:20b
+OLLAMA_HOST=https://ollama.com
+OLLAMA_API_KEY=your-key
+```
+
+Restart `uvicorn` after editing `.env`.
+
+### 3. Frontend
 
 ```bash
 cd frontend

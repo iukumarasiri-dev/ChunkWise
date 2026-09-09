@@ -7,3 +7,4 @@ chromadb
 sentence-transformers
 pdfplumber
 python-docx
+httpx
