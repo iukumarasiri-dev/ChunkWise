@@ -8,7 +8,7 @@
 export const API_BASE = "/api";
 
 // Flip to false once the FastAPI backend is running.
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 // --- mock data (mirrors the design mockup) --------------------------------
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString();

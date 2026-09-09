@@ -22,7 +22,16 @@ class Settings(BaseSettings):
 
     top_k: int = 5
 
+    # Answer generation: stub | ollama
     llm_provider: str = "stub"
+    # Model tag for the chosen provider (e.g. an Ollama tag like "llama3.1:8b").
+    # Empty -> the provider falls back to its own default.
+    llm_model: str = ""
+    # Ollama server base URL. Local: http://localhost:11434
+    # Ollama Cloud (hosted, no install): https://ollama.com
+    ollama_host: str = "http://localhost:11434"
+    # Required for Ollama Cloud, unused for a local server.
+    ollama_api_key: str = ""
 
     @property
     def uploads_dir(self) -> Path:
