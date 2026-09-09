@@ -13,7 +13,7 @@ from __future__ import annotations
 import sqlite3
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
 from app.config import get_settings
@@ -98,6 +98,20 @@ def get_document(doc_id: str) -> dict | None:
     return _row_to_dict(row) if row else None
 
 
+def get_document_by_filename(filename: str) -> dict | None:
+    """Case-insensitive lookup by original filename.
+
+    Used to reject duplicate uploads: filenames are how documents are identified
+    in the UI (list, scope selector, citations), so we keep them unique.
+    """
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM documents WHERE filename = ? COLLATE NOCASE",
+            (filename.strip(),),
+        ).fetchone()
+    return _row_to_dict(row) if row else None
+
+
 def list_documents() -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
@@ -127,3 +141,31 @@ def delete_document(doc_id: str) -> bool:
     with _connect() as conn:
         cur = conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
         return cur.rowcount > 0
+
+
+def fail_stale_processing(older_than_seconds: int = 120) -> int:
+    """Mark 'processing' rows older than the cutoff as 'failed'.
+
+    A background ingestion task does not survive a server restart, so any row
+    still 'processing' afterwards is stuck forever. Called once on startup.
+    Returns the number of rows updated.
+
+    uploaded_at is always written by datetime.now(timezone.utc).isoformat(), so
+    every value shares one format and a string comparison is a valid time
+    comparison.
+    """
+    cutoff = (
+        datetime.now(timezone.utc) - timedelta(seconds=older_than_seconds)
+    ).isoformat()
+    with _connect() as conn:
+        cur = conn.execute(
+            """
+            UPDATE documents
+               SET status = 'failed',
+                   error  = 'Ingestion interrupted (server restarted)'
+             WHERE status = 'processing'
+               AND uploaded_at < ?
+            """,
+            (cutoff,),
+        )
+        return cur.rowcount
