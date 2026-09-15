@@ -4,6 +4,7 @@ python-multipart
 pydantic
 pydantic-settings
 chromadb
+rank-bm25
 sentence-transformers
 pdfplumber
 python-docx
