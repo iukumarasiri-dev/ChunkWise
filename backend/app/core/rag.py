@@ -1,7 +1,7 @@
 """The RAG pipeline: ingestion and query.
 
 Ingestion:  parse -> chunk -> embed -> store, updating the document's status.
-Query:      embed question -> similarity search -> LLM generate -> answer + sources.
+Query:      embed question -> hybrid (vector + BM25) search -> LLM generate -> answer + sources.
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ def ingest_document(document_id: str, path: str, filename: str) -> None:
 def answer_query(question: str, document_id: str | None = None) -> QueryResponse:
     settings = get_settings()
 
-    hits = retrieval.search(embed_query(question), settings.top_k, document_id)
+    hits = retrieval.search(question, embed_query(question), settings.top_k, document_id)
 
     answer = get_llm_provider().generate(question, [h.text for h in hits])
 
