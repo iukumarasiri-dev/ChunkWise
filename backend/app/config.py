@@ -22,6 +22,12 @@ class Settings(BaseSettings):
 
     top_k: int = 5
 
+    # Reranking: hybrid search casts this wide a net before the cross-encoder
+    # picks the final top_k. Larger = better recall for the reranker to work
+    # with, at the cost of more cross-encoder inference per query.
+    rerank_pool_size: int = 20
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
     # Answer generation: stub | ollama
     llm_provider: str = "stub"
     # Model tag for the chosen provider (e.g. an Ollama tag like "llama3.1:8b").
