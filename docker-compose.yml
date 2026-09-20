@@ -4,9 +4,11 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     volumes:
       - backend_storage:/app/storage
+      - hf_cache:/root/.cache/huggingface
 
   frontend:
     build: ./frontend
@@ -17,3 +19,4 @@ services:
 
 volumes:
   backend_storage:
+  hf_cache:
