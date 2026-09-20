@@ -124,9 +124,23 @@ npm run dev
 The API will be available at http://localhost:8000 (interactive docs at `/docs`),
 and the frontend at http://localhost:5173.
 
+### 4. Docker (alternative to steps 1–3)
+
+```bash
+cp backend/.env.example backend/.env   # optional — only needed to customize settings or enable Ollama
+docker compose up --build
+```
+
+The frontend will be available at http://localhost:3000 (nginx proxies `/api` to
+the backend), and the backend directly at http://localhost:8000. Uploaded
+documents, the vector DB, and the SQLite metadata all persist in a named volume
+across restarts. `backend/.env` is optional — the app runs with built-in
+defaults (`LLM_PROVIDER=stub`) if it's absent; copy it only to point at Ollama
+or change other settings.
+
 ## Roadmap
 
 - [ ] Hybrid search (vector + keyword/BM25) for better retrieval on exact terms
 - [ ] Re-ranking retrieved chunks with a cross-encoder
 - [ ] Retrieval evaluation harness
-- [ ] Docker Compose setup for one-command startup
+- [x] Docker Compose setup for one-command startup
