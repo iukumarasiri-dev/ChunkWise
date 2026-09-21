@@ -44,10 +44,11 @@ app = FastAPI(title="ChunkWise", version="0.1.0", lifespan=lifespan)
 
 # The frontend dev server runs on :5173 and proxies /api to us. The proxy makes
 # requests same-origin, so CORS isn't strictly required, but allowing it means a
-# direct browser call to :8000 also works.
+# direct browser call to :8000 also works. In production, FRONTEND_ORIGIN should
+# be set to the deployed frontend's URL.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[get_settings().frontend_origin],
     allow_methods=["*"],
     allow_headers=["*"],
 )

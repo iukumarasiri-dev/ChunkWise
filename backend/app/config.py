@@ -15,6 +15,10 @@ class Settings(BaseSettings):
 
     storage_dir: Path = Path("storage")
 
+    # Origin the frontend is served from, for CORS. The dev Vite server by
+    # default; override in production with the deployed frontend's URL.
+    frontend_origin: str = "http://localhost:5173"
+
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     chunk_size: int = 800
