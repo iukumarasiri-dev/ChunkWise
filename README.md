@@ -138,9 +138,48 @@ across restarts. `backend/.env` is optional — the app runs with built-in
 defaults (`LLM_PROVIDER=stub`) if it's absent; copy it only to point at Ollama
 or change other settings.
 
+## Exposing beyond localhost
+
+Every endpoint except `/health` is unauthenticated by default — fine for
+local use, not fine once the app is reachable from outside your machine
+(e.g. via a Cloudflare Tunnel, ngrok, or a public deploy). Before doing
+that, set `API_KEY` in `backend/.env`:
+
+```
+API_KEY=<generate one>
+```
+
+Generate a value with:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Restart the backend (or `docker compose up --build -d`) after setting it.
+Once set, the frontend will prompt once for the key on first use and
+remember it in the browser (`localStorage`); the API rejects any request
+without a matching `X-API-Key` header. Leaving `API_KEY` blank keeps auth
+disabled, which the server logs a warning about on startup.
+
+## CI/CD
+
+GitHub Actions runs on every push and pull request to `main` ([.github/workflows/ci.yml](.github/workflows/ci.yml)):
+
+1. **backend-tests** — installs `backend/requirements-dev.txt` and runs `pytest`.
+2. **frontend-build** — installs frontend deps with `npm ci` and runs `npm run build`.
+3. **deploy** — runs only after both jobs above pass, and only on a direct push to `main` (not on pull requests). Executes on a **self-hosted runner**: checks out the code and runs `docker compose up -d --build` to rebuild and restart the app in place.
+
+Requirements for the self-hosted runner:
+
+- Docker (with the Compose plugin) installed and the runner user able to run it.
+- `backend/.env` already present on the runner — it's git-ignored and not checked out by CI, so it must be created/maintained directly on the deploy host (see [Getting started](#3-frontend) above for its contents).
+
+To add automated tests as a merge gate, keep pushing to feature branches and opening PRs into `main` — the `backend-tests` and `frontend-build` jobs run on PRs too, `deploy` does not.
+
 ## Roadmap
 
 - [ ] Hybrid search (vector + keyword/BM25) for better retrieval on exact terms
-- [ ] Re-ranking retrieved chunks with a cross-encoder
+- [x] Re-ranking retrieved chunks with a cross-encoder
 - [ ] Retrieval evaluation harness
 - [x] Docker Compose setup for one-command startup
+- [x] CI/CD pipeline (GitHub Actions: test, build, self-hosted deploy)
