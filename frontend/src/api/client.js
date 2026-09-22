@@ -10,6 +10,55 @@ export const API_BASE = "/api";
 // Flip to false once the FastAPI backend is running.
 const USE_MOCK = false;
 
+// --- API key -----------------------------------------------------------
+// Sent as X-API-Key on every request. Only needed if the backend has
+// API_KEY set (required once the app is exposed beyond localhost). Stored
+// so the user only has to enter it once per browser.
+const API_KEY_STORAGE_KEY = "chunkwise_api_key";
+
+function getApiKey() {
+  try {
+    return localStorage.getItem(API_KEY_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function setApiKey(key) {
+  try {
+    if (key) localStorage.setItem(API_KEY_STORAGE_KEY, key);
+    else localStorage.removeItem(API_KEY_STORAGE_KEY);
+  } catch {
+    /* private browsing / storage disabled - key just won't persist */
+  }
+}
+
+function authHeaders() {
+  const key = getApiKey();
+  return key ? { "X-API-Key": key } : {};
+}
+
+// Fetch wrapper that attaches the stored API key and, on a 401 (missing or
+// wrong key), prompts for one and retries once.
+async function authorizedFetch(url, options = {}) {
+  const withAuth = (opts) => ({
+    ...opts,
+    headers: { ...(opts.headers || {}), ...authHeaders() },
+  });
+
+  let res = await fetch(url, withAuth(options));
+  if (res.status === 401) {
+    const entered = window.prompt(
+      "This ChunkWise server requires an API key.\nEnter it:"
+    );
+    if (entered && entered.trim()) {
+      setApiKey(entered.trim());
+      res = await fetch(url, withAuth(options));
+    }
+  }
+  return res;
+}
+
 // --- mock data (mirrors the design mockup) --------------------------------
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString();
 
@@ -64,7 +113,7 @@ export async function listDocuments() {
     await delay(250);
     return mockDocs.map((d) => ({ ...d }));
   }
-  return handle(await fetch(`${API_BASE}/documents`));
+  return handle(await authorizedFetch(`${API_BASE}/documents`));
 }
 
 export async function uploadDocument(file) {
@@ -93,7 +142,7 @@ export async function uploadDocument(file) {
   const form = new FormData();
   form.append("file", file);
   return handle(
-    await fetch(`${API_BASE}/documents`, { method: "POST", body: form })
+    await authorizedFetch(`${API_BASE}/documents`, { method: "POST", body: form })
   );
 }
 
@@ -103,7 +152,9 @@ export async function deleteDocument(id) {
     mockDocs = mockDocs.filter((d) => d.id !== id);
     return { ok: true };
   }
-  const res = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
+  const res = await authorizedFetch(`${API_BASE}/documents/${id}`, {
+    method: "DELETE",
+  });
   if (!res.ok) throw new Error("Delete failed");
   return { ok: true };
 }
@@ -117,40 +168,7 @@ export async function query(question, documentId) {
     };
   }
   return handle(
-    await fetch(`${API_BASE}/query`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question, document_id: documentId ?? null }),
-    })
-  );
-  if (USE_MOCK) {
-    await delay(600);
-    return {
-      answer:
-        "Revenue grew 18% year-over-year in Q3, driven mainly by expansion " +
-        "in the enterprise segment.",
-      sources: [
-        {
-          document_id: "1",
-          filename: "annual_report_2025.pdf",
-          page: 12,
-          excerpt:
-            "...enterprise segment revenue increased 18% compared to prior year...",
-          score: 0.82,
-        },
-        {
-          document_id: "1",
-          filename: "annual_report_2025.pdf",
-          page: 13,
-          excerpt:
-            "...total Q3 revenue reached $42.3M, up from $35.8M last year...",
-          score: 0.78,
-        },
-      ],
-    };
-  }
-  return handle(
-    await fetch(`${API_BASE}/query`, {
+    await authorizedFetch(`${API_BASE}/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, document_id: documentId ?? null }),
