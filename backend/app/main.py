@@ -7,7 +7,7 @@ Run from the backend/ folder:
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
@@ -15,6 +15,7 @@ from app.db import documents as db
 from app.api import documents as documents_api
 from app.api import upload as upload_api
 from app.api import query as query_api
+from app.security import require_api_key
 
 # Show our own INFO logs (e.g. "Ingested … N chunks", ingestion failures) in the
 # server console. basicConfig is a no-op if the root logger already has handlers,
@@ -37,6 +38,13 @@ async def lifespan(app: FastAPI):
     if swept:
         print(f"[startup] marked {swept} interrupted document(s) as failed")
 
+    if not settings.api_key:
+        logging.getLogger("app").warning(
+            "API_KEY is not set - all endpoints are open to anyone who can "
+            "reach this server. Set API_KEY in backend/.env before exposing "
+            "it beyond localhost."
+        )
+
     yield
 
 
@@ -53,9 +61,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(documents_api.router)
-app.include_router(upload_api.router)
-app.include_router(query_api.router)
+_auth = [Depends(require_api_key)]
+app.include_router(documents_api.router, dependencies=_auth)
+app.include_router(upload_api.router, dependencies=_auth)
+app.include_router(query_api.router, dependencies=_auth)
 
 
 @app.get("/health")

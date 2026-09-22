@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     # Required for Ollama Cloud, unused for a local server.
     ollama_api_key: str = ""
 
+    # Shared secret required in the X-API-Key header on every request except
+    # /health. Blank disables auth (fine for pure localhost use). Required
+    # before exposing the app beyond localhost - e.g. via a tunnel.
+    api_key: str = ""
+
     @property
     def uploads_dir(self) -> Path:
         return self.storage_dir / "uploads"
