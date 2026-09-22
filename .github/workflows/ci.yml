@@ -50,3 +50,18 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  deploy:
+    needs: [backend-tests, frontend-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: self-hosted
+
+    steps:
+      - name: Check Docker is reachable
+        run: docker --version
+
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Deploy
+        run: docker compose up -d --build
