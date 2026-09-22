@@ -62,6 +62,11 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v5
+        with:
+          # Default checkout behavior deletes untracked files, which would
+          # wipe backend/.env (git-ignored, maintained directly on this
+          # runner - see README's CI/CD section). Keep it across runs.
+          clean: false
 
       - name: Deploy
         run: docker compose up -d --build
